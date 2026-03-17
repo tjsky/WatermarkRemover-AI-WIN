@@ -120,10 +120,10 @@ if ($CHINA_MODE) {
 
 # Install base deps with tips (legacy resolver to ignore conflicts)
 if ($CHINA_MODE) {
-    # For China: use Tsinghua mirror, skip PyTorch extra-index-url from requirements.txt
-    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements.txt", "--no-cache-dir", "--use-deprecated=legacy-resolver", "-i", $PIP_INDEX_URL, "--trusted-host", "pypi.tuna.tsinghua.edu.cn" -NoNewWindow -PassThru
+    # For China: use Tsinghua mirror, explicit suffixes in requirements_windows.txt will force GPU versions
+    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements_windows.txt", "--no-cache-dir", "--use-deprecated=legacy-resolver", "-i", $PIP_INDEX_URL, "--trusted-host", "pypi.tuna.tsinghua.edu.cn" -NoNewWindow -PassThru
 } else {
-    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements.txt", "--no-cache-dir", "--use-deprecated=legacy-resolver" -NoNewWindow -PassThru
+    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements_windows.txt", "--no-cache-dir", "--use-deprecated=legacy-resolver" -NoNewWindow -PassThru
 }
 
 $lastTipTime = Get-Date
@@ -165,11 +165,15 @@ if ($CHINA_MODE) {
 }
 $iopaintProcess.WaitForExit()
 
-if ($iopaintProcess.ExitCode -ne 0) {
+# Smart check: Verify if iopaint is actually installed rather than strictly trusting the exit code (which fails on PATH warnings)
+$checkIopaint = & $PYTHON_EXE -m pip show iopaint 2>&1
+if ($checkIopaint -notmatch "Name: iopaint") {
     Write-Host ""
     Write-Host "  [X] Failed to install iopaint" -ForegroundColor Red
     Read-Host "  Press Enter to exit"
     exit 1
+} elseif ($iopaintProcess.ExitCode -ne 0) {
+    Write-Host "  [!] iopaint installation returned a warning (likely PATH), but module is installed." -ForegroundColor Yellow
 }
 Write-Host "  [OK] iopaint installed" -ForegroundColor Green
 

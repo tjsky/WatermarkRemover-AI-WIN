@@ -30,9 +30,9 @@ except ImportError:
 
 
 def download_lama_model():
-    """Download LaMA model using iopaint."""
-    logger.info("Downloading LaMA model... (this may take a few minutes)")
-    print("Downloading LaMA model (~196MB)... Please wait.")
+    """Download LaMa model using iopaint."""
+    logger.info("Downloading LaMa model... (this may take a few minutes)")
+    print("Downloading LaMa model (~196MB)... Please wait.")
 
     result = subprocess.run(
         [sys.executable, "-m", "iopaint", "download", "--model", "lama"],
@@ -41,21 +41,23 @@ def download_lama_model():
     )
 
     if result.returncode != 0:
-        logger.error("Failed to download LaMA model")
+        logger.error("Failed to download LaMa model")
         return False
 
-    logger.info("LaMA model downloaded successfully")
-    print("LaMA model downloaded!")
+    logger.info("LaMa model downloaded successfully")
+    print("LaMa model downloaded!")
     return True
 
 
 def load_lama_model(device):
-    """Load LaMA model, downloading if necessary."""
+    """Load LaMa model, downloading if necessary."""
     try:
-        return ModelManager(name="lama", device=device)
+        from iopaint.model.lama import LaMa
+        print("Bypassing ModelManager, loading LaMa directly...")
+        return LaMa(device=torch.device(device))
     except NotImplementedError as e:
         if "Unsupported model: lama" in str(e):
-            print("LaMA model not available, attempting to download...")
+            print("LaMa model not available, attempting to download...")
             if download_lama_model():
                 # Re-import to refresh model registry
                 import importlib
@@ -64,7 +66,7 @@ def load_lama_model(device):
                 # Try again
                 return ModelManager(name="lama", device=device)
             else:
-                raise RuntimeError("Failed to download LaMA model. Please run manually: python\\python.exe -m iopaint download --model lama")
+                raise RuntimeError("Failed to download LaMa model. Please run manually: python\\python.exe -m iopaint download --model lama")
         raise
 
 class TaskType(str, Enum):
@@ -76,8 +78,11 @@ def identify(task_prompt: TaskType, image: MatLike, text_input: str, model: Flor
         raise ValueError(f"task_prompt must be a TaskType, but {task_prompt} is of type {type(task_prompt)}")
 
     prompt = task_prompt.value if text_input is None else task_prompt.value + text_input
-    inputs = processor(text=prompt, images=image, return_tensors="pt")
-    inputs = {k: v.to(device) for k, v in inputs.items()}
+    inputs = processor(text=prompt, images=image, return_tensors="pt")   
+    inputs = {k: v.to(device) for k, v in inputs.items()}   
+    # Force alignment of image tensor data types with the model.
+    if "pixel_values" in inputs:
+        inputs["pixel_values"] = inputs["pixel_values"].to(model.dtype)
 
     generated_ids = model.generate(
         input_ids=inputs["input_ids"],
