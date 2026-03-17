@@ -8,6 +8,10 @@
 
 ---
 
+## 提醒
+这是我的自用修改，旨在解决自用环境下的基础可用性，存在对原版代码有部分逻辑的破坏性修改，所以不打算PR合并进上游仓库。
+未做兼容性测试，合并上游修改速度随缘，如果你拿来用时遇到问题，可以提 Issues ，只保证在有余力的情况下解决。
+
 ## Overview
 
 `WatermarkRemover-AI` is a cutting-edge application that leverages AI models for precise watermark detection and seamless removal. Perfect for removing watermarks from AI-generated videos like Sora, Sora 2, Runway, and others.
